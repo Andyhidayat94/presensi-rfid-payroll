@@ -11,6 +11,8 @@ use App\Models\RfidCard;
 use App\Models\Attendance;
 use App\Models\LeaveRequest;
 use App\Models\Salary;
+use App\Models\Position;
+use App\Models\Department;
 
 class Employee extends Model
 {
@@ -74,5 +76,15 @@ class Employee extends Model
     public function salaries()
     {
         return $this->hasMany(Salary::class);
+    }
+
+    public function position()
+    {
+    return $this->belongsTo(Position::class);
+    }
+
+    public function department()
+    {
+    return $this->belongsTo(Department::class);
     }
 }

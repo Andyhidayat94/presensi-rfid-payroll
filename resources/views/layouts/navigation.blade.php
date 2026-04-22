@@ -142,6 +142,11 @@
         📊 Dashboard
     </a>
 
+    <a href="{{ route('finance.salary.index') }}"
+   class="flex items-center gap-2 px-4 py-2 hover:bg-blue-600/20 rounded">
+    💰 Setting Gaji
+    </a>
+
     <a href="{{ route('finance.payroll.index') }}"
        class="menu {{ request()->routeIs('finance.payroll.index') ? 'active' : '' }}">
         📄 Payroll Bulanan
@@ -170,6 +175,11 @@
     <a href="{{ route('admin.employees') }}"
        class="menu {{ request()->routeIs('admin.employees') ? 'active' : '' }}">
         📋 Approval Karyawan
+    </a>
+
+    <a href="{{ route('admin.salary.settings') }}"
+        class="menu {{ request()->routeIs('admin.employees') ? 'active' : '' }}">
+        📋 Approval Aturan gaji
     </a>
 
     <a href="{{ route('admin.payroll') }}"

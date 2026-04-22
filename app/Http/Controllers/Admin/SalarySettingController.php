@@ -3,29 +3,50 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\SalarySetting;
+use App\Models\SalaryRule;
+use Illuminate\Support\Facades\Auth;
 
 class SalarySettingController extends Controller
 {
     public function index()
     {
-        $settings = SalarySetting::all();
-        return view('admin.salary.index', compact('settings'));
+        $rules = SalaryRule::with(['position','department'])
+            ->latest()
+            ->get();
+
+        return view('admin.salary.index', compact('rules'));
     }
 
-    public function store(Request $request)
+    public function approve($id)
     {
-        $request->validate([
-            'jabatan' => 'required',
-            'upah_harian' => 'required|numeric|min:0'
+        $rule = SalaryRule::findOrFail($id);
+
+        // 🚫 jika sudah approve → tidak bisa diubah
+        if ($rule->status == 'approved') {
+            return back()->with('error', 'Data sudah di-approve');
+        }
+
+        $rule->update([
+            'status' => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now()
         ]);
 
-        SalarySetting::updateOrCreate(
-            ['jabatan' => $request->jabatan],
-            ['upah_harian' => $request->upah_harian]
-        );
+        return back()->with('success', 'Setting gaji berhasil di-approve');
+    }
 
-        return back()->with('success','Setting gaji disimpan');
+    public function reject($id)
+    {
+        $rule = SalaryRule::findOrFail($id);
+
+        if ($rule->status == 'approved') {
+            return back()->with('error', 'Data sudah di-approve, tidak bisa ditolak');
+        }
+
+        $rule->update([
+            'status' => 'rejected'
+        ]);
+
+        return back()->with('success', 'Setting gaji ditolak');
     }
 }

@@ -7,142 +7,123 @@ use Illuminate\Http\Request;
 use App\Models\Employee;
 use App\Models\Attendance;
 use App\Models\Payroll;
-use App\Models\SalarySetting;
-use Carbon\Carbon;
+use App\Models\SalaryRule;
+use App\Models\LeaveRequest;
 
 class PayrollController extends Controller
 {
 
-    /*
-    |--------------------------------------------------------------------------
-    | INDEX – Daftar payroll
-    |--------------------------------------------------------------------------
-    */
     public function index()
     {
         $payrolls = Payroll::with('employee')
-            ->orderBy('tahun', 'desc')
-            ->orderBy('bulan', 'desc')
+            ->latest()
             ->get();
 
         return view('finance.payroll.index', compact('payrolls'));
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | GENERATE PAYROLL BULANAN
-    |--------------------------------------------------------------------------
-    */
     public function generate(Request $request)
     {
         $request->validate([
             'bulan' => 'required|numeric|min:1|max:12',
-            'tahun' => 'required|numeric|min:2024',
+            'tahun' => 'required|numeric',
         ]);
 
-        $month = $request->bulan;
-        $year  = $request->tahun;
+        $bulan = $request->bulan;
+        $tahun = $request->tahun;
 
         $employees = Employee::all();
 
-        foreach ($employees as $employee) {
+        foreach ($employees as $emp) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | CEK JIKA PAYROLL SUDAH LOCKED
-            |--------------------------------------------------------------------------
-            */
-            $existingPayroll = Payroll::where('employee_id', $employee->id)
-                ->where('bulan', $month)
-                ->where('tahun', $year)
+            // skip jika sudah locked
+            $existing = Payroll::where('employee_id', $emp->id)
+                ->where('bulan', $bulan)
+                ->where('tahun', $tahun)
                 ->first();
 
-            if ($existingPayroll && $existingPayroll->locked) {
-                continue; // lewati jika sudah dikunci
-            }
+            if ($existing && $existing->locked) continue;
 
-            /*
-            |--------------------------------------------------------------------------
-            | AMBIL UPAH HARIAN BERDASARKAN JABATAN
-            |--------------------------------------------------------------------------
-            */
-            $setting = SalarySetting::where('jabatan', $employee->jabatan)->first();
+            // ambil salary rule
+            $rule = SalaryRule::where('position_id', $emp->position_id)
+                ->where('department_id', $emp->department_id)
+                ->where('status', 'approved')
+                ->first();
 
-            if (!$setting) {
-                continue; // kalau belum ada setting jabatan, skip
-            }
+            if (!$rule) continue;
 
-            $upahHarian = $setting->upah_harian;
-
-            /*
-            |--------------------------------------------------------------------------
-            | HITUNG HARI DIBAYAR (pulang + cuti + sakit)
-            |--------------------------------------------------------------------------
-            */
-            $hariDibayar = Attendance::where('employee_id', $employee->id)
-                ->whereMonth('tanggal', $month)
-                ->whereYear('tanggal', $year)
-                ->whereIn('status_hadir', ['pulang', 'cuti', 'sakit'])
+            // HITUNG HADIR
+            $hadir = Attendance::where('employee_id', $emp->id)
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->where('status_hadir', 'hadir')
                 ->count();
 
-            /*
-            |--------------------------------------------------------------------------
-            | HITUNG ALPHA
-            |--------------------------------------------------------------------------
-            */
-            $hariAlpha = Attendance::where('employee_id', $employee->id)
-                ->whereMonth('tanggal', $month)
-                ->whereYear('tanggal', $year)
+            // HITUNG ALPHA
+            $alpha = Attendance::where('employee_id', $emp->id)
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
                 ->where('status_hadir', 'alpha')
                 ->count();
 
-            /*
-            |--------------------------------------------------------------------------
-            | PERHITUNGAN GAJI MODEL TOKO
-            | Masuk dibayar, tidak masuk tidak dibayar
-            |--------------------------------------------------------------------------
-            */
-            $gajiPokok  = $hariDibayar * $upahHarian;
-            $potongan   = $hariAlpha * $upahHarian;
-            $gajiBersih = $gajiPokok - $potongan;
+            // HITUNG CUTI APPROVED
+            $cuti = LeaveRequest::where('employee_id', $emp->id)
+                ->where('status', 'approved')
+                ->whereMonth('tanggal_mulai', $bulan)
+                ->count();
 
-            /*
-            |--------------------------------------------------------------------------
-            | SIMPAN / UPDATE
-            |--------------------------------------------------------------------------
-            */
+            $gaji_pokok = 0;
+            $upah_harian = 0;
+            $potongan = 0;
+            $gaji_bersih = 0;
+
+            // =========================
+            // LOGIC GAJI
+            // =========================
+            if ($rule->tipe_gaji == 'harian') {
+
+                $upah_harian = $rule->upah_harian;
+                $total_hadir = $hadir + $cuti;
+
+                $gaji_bersih = $total_hadir * $upah_harian;
+
+            } else {
+
+                $gaji_pokok = $rule->gaji_pokok;
+                $potongan = $alpha * $rule->potongan_alpha;
+
+                $gaji_bersih = $gaji_pokok - $potongan;
+            }
+
+            // SIMPAN
             Payroll::updateOrCreate(
                 [
-                    'employee_id' => $employee->id,
-                    'bulan' => $month,
-                    'tahun' => $year,
+                    'employee_id' => $emp->id,
+                    'bulan' => $bulan,
+                    'tahun' => $tahun,
                 ],
                 [
-                    'hari_hadir' => $hariDibayar,
-                    'gaji_pokok' => $gajiPokok,
-                    'potongan'   => $potongan,
-                    'gaji_bersih'=> $gajiBersih,
+                    'hari_hadir' => $hadir,
+                    'total_alpha' => $alpha,
+                    'total_cuti' => $cuti,
+                    'gaji_pokok' => $gaji_pokok,
+                    'upah_harian' => $upah_harian,
+                    'potongan' => $potongan,
+                    'gaji_bersih' => $gaji_bersih,
                     'status_approval' => 'pending',
                     'locked' => false
                 ]
             );
         }
 
-        return back()->with('success', 'Payroll berhasil digenerate.');
+        return back()->with('success', 'Payroll berhasil digenerate (enterprise logic)');
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | HISTORY PAYROLL PER BULAN
-    |--------------------------------------------------------------------------
-    */
     public function history()
     {
         $data = Payroll::selectRaw('bulan, tahun,
                 SUM(gaji_bersih) as total_gaji,
-                SUM(potongan) as total_potongan,
                 COUNT(*) as total_karyawan')
             ->groupBy('bulan','tahun')
             ->orderByDesc('tahun')
@@ -152,59 +133,4 @@ class PayrollController extends Controller
         return view('finance.payroll.history', compact('data'));
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | DOWNLOAD SLIP
-    |--------------------------------------------------------------------------
-    */
-    public function downloadSlip($id)
-    {
-        $payroll = Payroll::with('employee')->findOrFail($id);
-
-        $month = $payroll->bulan;
-        $year  = $payroll->tahun;
-        $employeeId = $payroll->employee_id;
-
-        $hadir = Attendance::where('employee_id', $employeeId)
-            ->whereMonth('tanggal', $month)
-            ->whereYear('tanggal', $year)
-            ->where('status_hadir', 'pulang')
-            ->count();
-
-        $cuti = Attendance::where('employee_id', $employeeId)
-            ->whereMonth('tanggal', $month)
-            ->whereYear('tanggal', $year)
-            ->where('status_hadir', 'cuti')
-            ->count();
-
-        $sakit = Attendance::where('employee_id', $employeeId)
-            ->whereMonth('tanggal', $month)
-            ->whereYear('tanggal', $year)
-            ->where('status_hadir', 'sakit')
-            ->count();
-
-        $alpha = Attendance::where('employee_id', $employeeId)
-            ->whereMonth('tanggal', $month)
-            ->whereYear('tanggal', $year)
-            ->where('status_hadir', 'alpha')
-            ->count();
-
-        $upahHarian = $payroll->hari_hadir > 0
-            ? $payroll->gaji_pokok / $payroll->hari_hadir
-            : 0;
-
-        $pdf = \PDF::loadView('finance.payroll.slip', compact(
-            'payroll',
-            'hadir',
-            'cuti',
-            'sakit',
-            'alpha',
-            'upahHarian'
-        ));
-
-        return $pdf->download(
-            'Slip_Gaji_' . $payroll->employee->nama_lengkap . '.pdf'
-        );
-    }
 }

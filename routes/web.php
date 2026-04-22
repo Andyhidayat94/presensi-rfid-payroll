@@ -65,29 +65,39 @@ Route::middleware(['auth','role:admin'])
     ->name('admin.')
     ->group(function () {
 
-        // Audit log
-        Route::get('/audit-log', [AuditLogController::class, 'index'])
-        ->name('audit');
-
-        // Dashboard
+        // ===============================
+        // DASHBOARD
+        // ===============================
         Route::get('/dashboard', [AdminDashboardController::class,'index'])
             ->name('dashboard');
 
-        // User Management
+        // ===============================
+        // AUDIT LOG
+        // ===============================
+        Route::get('/audit-log', [AuditLogController::class, 'index'])
+            ->name('audit');
+
+        // ===============================
+        // USER MANAGEMENT
+        // ===============================
         Route::get('/users', [UserController::class, 'index'])
             ->name('users');
 
         Route::post('/users/{id}/toggle', [UserController::class, 'toggleStatus'])
             ->name('users.toggle');
 
-        // Approval Karyawan
+        // ===============================
+        // APPROVAL KARYAWAN
+        // ===============================
         Route::get('/employees', [EmployeeApprovalController::class, 'index'])
             ->name('employees');
 
         Route::post('/employees/{id}/approve', [EmployeeApprovalController::class, 'approve'])
             ->name('employees.approve');
 
-        // Approval Payroll
+        // ===============================
+        // APPROVAL PAYROLL
+        // ===============================
         Route::get('/payroll', [PayrollApprovalController::class, 'index'])
             ->name('payroll');
 
@@ -97,14 +107,21 @@ Route::middleware(['auth','role:admin'])
         Route::post('/payroll/{id}/reject', [PayrollApprovalController::class, 'reject'])
             ->name('payroll.reject');
 
-        // Salary setting
+        // ===============================
+        // SALARY SETTINGS (APPROVAL)
+        // ===============================
         Route::get('/salary-settings', [SalarySettingController::class, 'index'])
             ->name('salary.settings');
 
-        Route::post('/salary-settings', [SalarySettingController::class, 'store'])
-            ->name('salary.settings.store');
-});
+        // 🔥 INI YANG KURANG
+        Route::post('/salary-settings/{id}/approve', [SalarySettingController::class, 'approve'])
+            ->name('salary.settings.approve');
 
+        Route::post('/salary-settings/{id}/reject', [SalarySettingController::class, 'reject'])
+            ->name('salary.settings.reject');
+
+    });
+    
 /*
 |--------------------------------------------------------------------------
 | HRD
@@ -171,12 +188,14 @@ Route::middleware(['auth','role:hrd'])
 */
 Route::middleware(['auth','role:finance'])
     ->prefix('finance')
-    ->name('finance.')   // <- WAJIB ADA
+    ->name('finance.')
     ->group(function () {
 
+        // DASHBOARD
         Route::get('/dashboard', [FinanceDashboardController::class, 'index'])
             ->name('dashboard');
 
+        // PAYROLL
         Route::get('/payroll', [PayrollController::class, 'index'])
             ->name('payroll.index');
 
@@ -188,6 +207,16 @@ Route::middleware(['auth','role:finance'])
 
         Route::get('/payroll/{id}/download', [PayrollController::class, 'downloadSlip'])
             ->name('payroll.download');
+
+        // 🔥 SALARY (BARU)
+        Route::get('/salary', [\App\Http\Controllers\Finance\SalaryRuleController::class, 'index'])
+            ->name('salary.index');
+
+        Route::get('/salary/create', [\App\Http\Controllers\Finance\SalaryRuleController::class, 'create'])
+            ->name('salary.create');
+
+        Route::post('/salary', [\App\Http\Controllers\Finance\SalaryRuleController::class, 'store'])
+            ->name('salary.store');
 });
 
 /*
