@@ -11,15 +11,26 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $employee = Auth::user()->employee;
+        $user = Auth::user();
+        $employee = $user->employee;
 
+        if (!$employee) {
+            abort(404, 'Data karyawan tidak ditemukan');
+        }
+
+        // =========================
+        // TOTAL HADIR
+        // =========================
         $totalHadir = Attendance::where('employee_id', $employee->id)
-            ->where('status_hadir', 'pulang')
+            ->where('status_hadir', 'hadir')
             ->count();
 
+        // =========================
+        // GAJI TERAKHIR
+        // =========================
         $latestPayroll = Payroll::where('employee_id', $employee->id)
-            ->orderBy('tahun', 'desc')
-            ->orderBy('bulan', 'desc')
+            ->orderByDesc('tahun')
+            ->orderByDesc('bulan')
             ->first();
 
         return view('karyawan.dashboard', compact(

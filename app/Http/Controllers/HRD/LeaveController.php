@@ -49,14 +49,15 @@ class LeaveController extends Controller
         $start->addDay();
     }
 
-    return back()->with('success', 'Pengajuan disetujui dan presensi otomatis dibuat');
-    
+    // 🔥 pindahkan sebelum return
     logActivity(
-    'approve',
-    'leave',
-    'HRD menyetujui pengajuan ID: ' . $leave->id
-        );
-    }
+        'approve',
+        'leave',
+        'HRD menyetujui pengajuan ID: ' . $leave->id
+    );
+
+    return back()->with('success', 'Pengajuan disetujui dan presensi otomatis dibuat');
+}
 
     public function reject($id)
     {

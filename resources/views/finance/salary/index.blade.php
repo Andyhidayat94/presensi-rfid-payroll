@@ -11,6 +11,15 @@
             class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
             + Tambah Gaji
         </a>
+
+    <form action="{{ route('finance.payroll.export') }}" method="GET" class="mb-4">
+    <input type="hidden" name="bulan" value="{{ request('bulan') }}">
+    <input type="hidden" name="tahun" value="{{ request('tahun') }}">
+
+    <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+        Export PDF
+    </button>
+</form>
     </div>
 
     {{-- ALERT --}}
@@ -30,11 +39,12 @@
                 <tr class="text-left">
                     <th class="p-4">Jabatan</th>
                     <th>Divisi</th>
-                    <th>Tipe Gaji</th>
-                    <th>Nominal</th>
-                    <th>Potongan Alpha</th>
+                    <th>Tipe</th>
+                    <th>Gaji Pokok</th>
+                    <th>Uang Harian</th>
                     <th>Status</th>
-                    <th>Approved At</th>
+                    <th>Approved</th>
+                    <th>Aksi</th>
                 </tr>
             </thead>
 
@@ -53,35 +63,31 @@
                         {{ $r->department->name ?? '-' }}
                     </td>
 
-                    {{-- TIPE GAJI --}}
+                    {{-- TIPE --}}
                     <td>
                         @if($r->tipe_gaji == 'harian')
                             <span class="px-2 py-1 text-xs bg-blue-100 text-blue-600 rounded">
-                                Harian
+                                Operator (Harian)
                             </span>
                         @else
                             <span class="px-2 py-1 text-xs bg-green-100 text-green-600 rounded">
-                                Bulanan
+                                Bulanan + Harian
                             </span>
                         @endif
                     </td>
 
-                    {{-- NOMINAL --}}
+                    {{-- GAJI POKOK --}}
                     <td class="font-semibold">
-                        @if($r->tipe_gaji == 'harian')
-                            Rp {{ number_format($r->upah_harian,0,',','.') }}
-                        @else
+                        @if($r->gaji_pokok > 0)
                             Rp {{ number_format($r->gaji_pokok,0,',','.') }}
-                        @endif
-                    </td>
-
-                    {{-- POTONGAN --}}
-                    <td>
-                        @if($r->tipe_gaji == 'bulanan')
-                            Rp {{ number_format($r->potongan_alpha,0,',','.') }}
                         @else
                             <span class="text-gray-400">-</span>
                         @endif
+                    </td>
+
+                    {{-- UANG HARIAN --}}
+                    <td class="font-semibold text-blue-600">
+                        Rp {{ number_format($r->uang_harian,0,',','.') }}
                     </td>
 
                     {{-- STATUS --}}
@@ -103,13 +109,42 @@
 
                     {{-- APPROVED AT --}}
                     <td class="text-gray-500 text-xs">
-                        {{ $r->approved_at ? \Carbon\Carbon::parse($r->approved_at)->format('d M Y H:i') : '-' }}
+                        @if($r->approved_at)
+                            {{ \Carbon\Carbon::parse($r->approved_at)->format('d M Y H:i') }}
+                        @else
+                            -
+                        @endif
+                    </td>
+
+                    {{-- AKSI --}}
+                    <td>
+                        @if($r->status == 'pending' && auth()->user()->role == 'admin')
+                            <div class="flex gap-2">
+
+                                <form action="{{ route('finance.salary.approve', $r->id) }}" method="POST">
+                                    @csrf
+                                    <button class="px-3 py-1 text-xs bg-green-600 text-white rounded">
+                                        Approve
+                                    </button>
+                                </form>
+
+                                <form action="{{ route('finance.salary.reject', $r->id) }}" method="POST">
+                                    @csrf
+                                    <button class="px-3 py-1 text-xs bg-red-600 text-white rounded">
+                                        Reject
+                                    </button>
+                                </form>
+
+                            </div>
+                        @else
+                            <span class="text-gray-400 text-xs">-</span>
+                        @endif
                     </td>
 
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="text-center p-6 text-gray-400">
+                    <td colspan="8" class="text-center p-6 text-gray-400">
                         Belum ada data setting gaji
                     </td>
                 </tr>

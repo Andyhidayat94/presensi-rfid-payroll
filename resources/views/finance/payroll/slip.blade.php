@@ -71,13 +71,12 @@
 <div class="header">
 
     {{-- LOGO --}}
-    <img src="{{ public_path('logo.png') }}" class="logo">
+    <img src="{{ public_path('logo.png') }}" width="80">
 
     <h2>SLIP GAJI KARYAWAN</h2>
 
     <p class="small">
-        Nomor Slip:
-        SLIP/{{ $payroll->tahun }}/{{ str_pad($payroll->bulan,2,'0',STR_PAD_LEFT) }}/{{ $payroll->id }}
+        Nomor Slip:SLIP/{{ $payroll->tahun }}/{{ $payroll->bulan }}/{{ $payroll->id }}
     </p>
 
     <p>
@@ -106,26 +105,26 @@
 {{-- REKAP KEHADIRAN --}}
 <div class="section-title">Rekap Kehadiran Bulan Ini</div>
 
-<table class="border">
+<table width="100%" border="1" cellspacing="0" cellpadding="5">
     <tr>
         <td>Total Hari Kerja</td>
-        <td class="right">{{ $payroll->total_hari ?? '-' }} Hari</td>
+        <td align="right">{{ $totalHariKerja }} Hari</td>
     </tr>
     <tr>
         <td>Hadir</td>
-        <td class="right">{{ $payroll->hari_hadir }} Hari</td>
+        <td align="right">{{ $payroll->hari_hadir }} Hari</td>
     </tr>
     <tr>
         <td>Cuti</td>
-        <td class="right">{{ $payroll->jumlah_cuti ?? 0 }} Hari</td>
+        <td align="right">{{ $payroll->total_cuti ?? 0 }} Hari</td>
     </tr>
     <tr>
         <td>Sakit</td>
-        <td class="right">{{ $payroll->jumlah_sakit ?? 0 }} Hari</td>
+        <td align="right">{{ $payroll->total_sakit ?? 0 }} Hari</td>
     </tr>
     <tr>
         <td>Alpha</td>
-        <td class="right">{{ $payroll->jumlah_alpha ?? 0 }} Hari</td>
+        <td align="right">{{ $payroll->total_alpha ?? 0 }} Hari</td>
     </tr>
 </table>
 
@@ -133,27 +132,49 @@
 {{-- PERHITUNGAN GAJI --}}
 <div class="section-title">Perhitungan Gaji</div>
 
-<table class="border">
+<table width="100%" border="1" cellspacing="0" cellpadding="5">
+
+    @if($payroll->tipe_gaji == 'harian')
+
+        <tr>
+            <td>Upah Harian</td>
+            <td align="right">
+                Rp {{ number_format($payroll->upah_harian,0,',','.') }}
+            </td>
+        </tr>
+
+        <tr>
+            <td>Total Hadir</td>
+            <td align="right">
+                {{ $payroll->hari_hadir }} Hari
+            </td>
+        </tr>
+
+    @else
+
+        <tr>
+            <td>Gaji Pokok</td>
+            <td align="right">
+                Rp {{ number_format($payroll->gaji_pokok,0,',','.') }}
+            </td>
+        </tr>
+
+        <tr>
+            <td>Potongan (Alpha)</td>
+            <td align="right">
+                Rp {{ number_format($payroll->potongan,0,',','.') }}
+            </td>
+        </tr>
+
+    @endif
+
     <tr>
-        <td>Gaji Pokok</td>
-        <td class="right">
-            Rp {{ number_format($payroll->gaji_pokok,0,',','.') }}
+        <td><b>Gaji Bersih</b></td>
+        <td align="right">
+            <b>Rp {{ number_format($payroll->gaji_bersih,0,',','.') }}</b>
         </td>
     </tr>
-    <tr>
-        <td>Potongan (Alpha)</td>
-        <td class="right">
-            Rp {{ number_format($payroll->potongan,0,',','.') }}
-        </td>
-    </tr>
-    <tr>
-        <td><strong>Gaji Bersih</strong></td>
-        <td class="right">
-            <strong>
-                Rp {{ number_format($payroll->gaji_bersih,0,',','.') }}
-            </strong>
-        </td>
-    </tr>
+
 </table>
 
 

@@ -191,11 +191,15 @@ Route::middleware(['auth','role:finance'])
     ->name('finance.')
     ->group(function () {
 
+        // =========================
         // DASHBOARD
+        // =========================
         Route::get('/dashboard', [FinanceDashboardController::class, 'index'])
             ->name('dashboard');
 
+        // =========================
         // PAYROLL
+        // =========================
         Route::get('/payroll', [PayrollController::class, 'index'])
             ->name('payroll.index');
 
@@ -208,7 +212,20 @@ Route::middleware(['auth','role:finance'])
         Route::get('/payroll/{id}/download', [PayrollController::class, 'downloadSlip'])
             ->name('payroll.download');
 
-        // 🔥 SALARY (BARU)
+        Route::delete('/payroll/{id}', [PayrollController::class, 'destroy'])
+            ->name('payroll.destroy');
+
+        // ✅ FIX EXPORT (INI YANG PENTING)
+        Route::get('/payroll/export-excel', [PayrollController::class, 'exportExcel'])
+            ->name('payroll.export.excel');
+
+        // (optional kalau PDF masih dipakai)
+        Route::get('/payroll/export-pdf', [PayrollController::class, 'exportPdf'])
+            ->name('payroll.export.pdf');
+
+        // =========================
+        // SALARY
+        // =========================
         Route::get('/salary', [\App\Http\Controllers\Finance\SalaryRuleController::class, 'index'])
             ->name('salary.index');
 

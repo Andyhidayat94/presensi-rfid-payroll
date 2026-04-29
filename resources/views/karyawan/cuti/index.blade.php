@@ -67,17 +67,17 @@
 
                         {{-- STATUS --}}
                         <td class="p-4 text-center">
-                            @if($r->status == 'approved')
+                            @if($r->status == 'disetujui')
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
                                     Disetujui
                                 </span>
-                            @elseif($r->status == 'rejected')
+                            @elseif($r->status == 'ditolak')
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
                                     Ditolak
                                 </span>
                             @else
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
-                                    Menunggu
+                                    Pending
                                 </span>
                             @endif
                         </td>

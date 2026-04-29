@@ -9,7 +9,7 @@
         <div>
             <h1 class="text-2xl font-bold">Dashboard Finance</h1>
             <p class="text-gray-500 text-sm">
-                Ringkasan Payroll Bulanan
+                Monitoring Payroll Bulanan (Realtime)
             </p>
         </div>
     </div>
@@ -37,20 +37,13 @@
         </button>
     </form>
 
-    {{-- SUMMARY CARD --}}
+    {{-- SUMMARY --}}
     <div class="grid grid-cols-3 gap-6 mb-6">
 
         <div class="bg-white p-6 rounded-xl shadow">
             <p class="text-sm text-gray-500">Total Gaji Dibayar</p>
-            <p class="text-xl font-bold">
+            <p class="text-xl font-bold text-green-600">
                 Rp {{ number_format($totalGaji,0,',','.') }}
-            </p>
-        </div>
-
-        <div class="bg-white p-6 rounded-xl shadow">
-            <p class="text-sm text-gray-500">Total Potongan</p>
-            <p class="text-xl font-bold text-red-600">
-                Rp {{ number_format($totalPotongan,0,',','.') }}
             </p>
         </div>
 
@@ -61,47 +54,112 @@
             </p>
         </div>
 
+        <div class="bg-white p-6 rounded-xl shadow">
+            <p class="text-sm text-gray-500">Karyawan Bermasalah (Alpha > 3)</p>
+            <p class="text-xl font-bold text-red-600">
+                {{ $karyawanBermasalah ?? 0 }}
+            </p>
+        </div>
+
     </div>
 
-    {{-- TABEL DETAIL --}}
-    <div class="bg-white rounded-xl shadow overflow-hidden">
-        <table class="w-full">
-            <thead class="bg-gray-100">
+    {{-- TABLE --}}
+    <div class="bg-white rounded-xl shadow overflow-x-auto">
+
+        <table class="w-full text-sm">
+
+            <thead class="bg-gray-50 text-gray-600">
                 <tr>
                     <th class="p-3 text-left">Nama</th>
-                    <th class="p-3 text-left">Hari Hadir</th>
-                    <th class="p-3 text-left">Alpha</th>
-                    <th class="p-3 text-left">Cuti</th>
-                    <th class="p-3 text-left">Sakit</th>
-                    <th class="p-3 text-left">Gaji Bersih</th>
+                    <th class="text-center">Tipe</th>
+                    <th class="text-center">Hadir</th>
+                    <th class="text-center">Cuti</th>
+                    <th class="text-center">Sakit</th>
+                    <th class="text-center">Alpha</th>
+                    <th class="text-right">Gaji Pokok</th>
+                    <th class="text-right">Uang Harian</th>
+                    <th class="text-right">Total Gaji</th>
+                    <th class="text-center">Status</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach($payrolls as $p)
-                <tr class="border-t">
-                    <td class="p-3">
-                        {{ $p->employee->nama_lengkap ?? '-' }}
-                    </td>
-                    <td class="p-3">{{ $p->hari_hadir }}</td>
-                    <td class="p-3 text-red-500">{{ $p->jumlah_alpha ?? 0 }}</td>
-                    <td class="p-3">{{ $p->jumlah_cuti ?? 0 }}</td>
-                    <td class="p-3">{{ $p->jumlah_sakit ?? 0 }}</td>
-                    <td class="p-3 font-semibold">
-                        Rp {{ number_format($p->gaji_bersih,0,',','.') }}
-                    </td>
-                </tr>
-                @endforeach
 
-                @if($payrolls->isEmpty())
+            <tbody>
+
+                @forelse($data as $row)
+                <tr class="border-t hover:bg-gray-50">
+
+                    {{-- NAMA --}}
+                    <td class="p-3 font-medium">
+                        {{ $row['nama'] }}
+                    </td>
+
+                    {{-- TIPE --}}
+                    <td class="text-center">
+                        @if($row['tipe'] == 'harian')
+                            <span class="text-blue-600 text-xs">Operator</span>
+                        @else
+                            <span class="text-green-600 text-xs">Bulanan + Harian</span>
+                        @endif
+                    </td>
+
+                    {{-- HADIR --}}
+                    <td class="text-center">{{ $row['hadir'] }}</td>
+
+                    {{-- CUTI --}}
+                    <td class="text-center">{{ $row['cuti'] }}</td>
+
+                    {{-- SAKIT --}}
+                    <td class="text-center">{{ $row['sakit'] }}</td>
+
+                    {{-- ALPHA --}}
+                    <td class="text-center font-semibold 
+                        {{ $row['alpha'] > 3 ? 'text-red-600' : 'text-gray-700' }}">
+                        {{ $row['alpha'] }}
+                    </td>
+
+                    {{-- GAJI POKOK --}}
+                    <td class="text-right">
+                        @if($row['gaji_pokok'] > 0)
+                            Rp {{ number_format($row['gaji_pokok'],0,',','.') }}
+                        @else
+                            -
+                        @endif
+                    </td>
+
+                    {{-- UANG HARIAN --}}
+                    <td class="text-right">
+                        Rp {{ number_format($row['uang_harian'],0,',','.') }}
+                    </td>
+
+                    {{-- TOTAL --}}
+                    <td class="text-right font-bold text-green-600">
+                        Rp {{ number_format($row['gaji'],0,',','.') }}
+                    </td>
+
+                    {{-- STATUS --}}
+                    <td class="text-center">
+                        @if($row['status'] == 'pending')
+                            <span class="text-yellow-600 text-xs">Pending</span>
+                        @elseif($row['status'] == 'approved')
+                            <span class="text-green-600 text-xs">Approved</span>
+                        @else
+                            <span class="text-red-600 text-xs">Rejected</span>
+                        @endif
+                    </td>
+
+                </tr>
+                @empty
                 <tr>
-                    <td colspan="6" class="text-center p-6 text-gray-500">
-                        Tidak ada data payroll bulan ini
+                    <td colspan="10" class="text-center p-6 text-gray-500">
+                        Tidak ada data
                     </td>
                 </tr>
-                @endif
+                @endforelse
 
             </tbody>
+
         </table>
+
     </div>
 
 </div>

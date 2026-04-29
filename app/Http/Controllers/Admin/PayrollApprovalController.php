@@ -17,16 +17,17 @@ class PayrollApprovalController extends Controller
     }
 
     public function approve($id)
-    {
+{
     $payroll = Payroll::findOrFail($id);
 
-    if($payroll->locked){
+    if ($payroll->locked) {
         return back()->with('error','Payroll sudah dikunci.');
     }
 
-    $payroll->status_approval = 'disetujui';
-    $payroll->locked = true; // 🔐 LOCK
-    $payroll->save();
+    $payroll->update([
+        'status_approval' => 'approved',
+        'locked' => true
+    ]);
 
     logActivity(
         'approve',
@@ -35,22 +36,25 @@ class PayrollApprovalController extends Controller
     );
 
     return back()->with('success','Payroll disetujui & dikunci');
-    }
+}
 
 
     public function reject($id)
-    {
-        $payroll = Payroll::findOrFail($id);
+{
+    $payroll = Payroll::findOrFail($id);
 
-        $payroll->status_approval = 'ditolak';
-        $payroll->save();
+    // 🔓 UNLOCK + SET REJECT
+    $payroll->update([
+        'status_approval' => 'rejected',
+        'locked' => false
+    ]);
 
-        logActivity(
-            'reject',
-            'payroll',
-            'Admin menolak payroll ID: '.$payroll->id
-        );
+    logActivity(
+        'reject',
+        'payroll',
+        'Admin menolak payroll ID: '.$payroll->id
+    );
 
-        return back()->with('success','Payroll ditolak');
+    return back()->with('success','Payroll ditolak & bisa digenerate ulang');
     }
 }

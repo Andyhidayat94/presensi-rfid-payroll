@@ -40,8 +40,8 @@
                 <select name="tipe_gaji" id="tipe_gaji" required
                     class="w-full mt-1 border rounded-lg px-3 py-2">
                     <option value="">-- Pilih Tipe Gaji --</option>
-                    <option value="harian">Harian</option>
-                    <option value="bulanan">Bulanan</option>
+                    <option value="harian">Harian (Operator)</option>
+                    <option value="bulanan">Bulanan (Leader+)</option>
                 </select>
             </div>
 
@@ -53,18 +53,10 @@
                     placeholder="Contoh: 5000000">
             </div>
 
-            {{-- UPAH HARIAN --}}
-            <div id="upah_harian_group" class="mb-4">
-                <label class="text-sm text-gray-600">Upah Harian</label>
-                <input type="number" name="upah_harian"
-                    class="w-full mt-1 border rounded-lg px-3 py-2"
-                    placeholder="Contoh: 100000">
-            </div>
-
-            {{-- POTONGAN ALPHA --}}
-            <div id="potongan_group" class="mb-4">
-                <label class="text-sm text-gray-600">Potongan Alpha / Hari</label>
-                <input type="number" name="potongan_alpha"
+            {{-- UANG HARIAN --}}
+            <div class="mb-4">
+                <label class="text-sm text-gray-600">Uang Harian</label>
+                <input type="number" name="uang_harian" required
                     class="w-full mt-1 border rounded-lg px-3 py-2"
                     placeholder="Contoh: 150000">
             </div>
@@ -84,36 +76,27 @@
 
 {{-- SCRIPT TOGGLE --}}
 <script>
-const tipe = document.getElementById('tipe_gaji');
+document.addEventListener("DOMContentLoaded", function () {
 
-const gajiPokok = document.getElementById('gaji_pokok_group');
-const upahHarian = document.getElementById('upah_harian_group');
-const potongan = document.getElementById('potongan_group');
+    const tipe = document.getElementById('tipe_gaji');
+    const gajiPokok = document.getElementById('gaji_pokok_group');
 
-function toggleGaji() {
+    function toggleGaji() {
 
-    if (tipe.value === 'harian') {
-
-        gajiPokok.style.display = 'none';
-        potongan.style.display = 'none';
-        upahHarian.style.display = 'block';
-
-    } else if (tipe.value === 'bulanan') {
-
-        gajiPokok.style.display = 'block';
-        potongan.style.display = 'block';
-        upahHarian.style.display = 'none';
-
-    } else {
-
-        gajiPokok.style.display = 'none';
-        potongan.style.display = 'none';
-        upahHarian.style.display = 'none';
+        if (tipe.value === 'harian') {
+            // Operator → tidak pakai gaji pokok
+            gajiPokok.style.display = 'none';
+        } else if (tipe.value === 'bulanan') {
+            // Leader+ → pakai gaji pokok
+            gajiPokok.style.display = 'block';
+        } else {
+            gajiPokok.style.display = 'none';
+        }
     }
-}
 
-tipe.addEventListener('change', toggleGaji);
-window.onload = toggleGaji;
+    tipe.addEventListener('change', toggleGaji);
+    toggleGaji();
+});
 </script>
 
 @endsection
